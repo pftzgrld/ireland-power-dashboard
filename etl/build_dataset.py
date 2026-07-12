@@ -386,11 +386,9 @@ def main():
     else:
         dataset["meta"]["has_prices"] = False
 
-    # keep the incremental fuel-mix log fresh on every full build too
-    try:
-        log_fuelmix()
-    except Exception as e:  # noqa: BLE001
-        print(f"  (fuelmix log skipped: {e})")
+    # NB: the fuel-mix running log is owned by the cloud poller
+    # (.github/workflows/poll-fuelmix.yml via --log-fuelmix). Full builds do NOT
+    # append to it, to avoid diverging from the authoritative cloud copy.
 
     out = os.path.join(DATA_DIR, "dataset.json")
     with open(out, "w") as fh:
