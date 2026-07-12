@@ -244,6 +244,93 @@ def fetch_entsoe_prices(start, end):
     }
 
 
+# ENTSO-E production-type codes we care about (A75). Solar is the headline —
+# EirGrid's own feed has no solar series, so this is the only free MW source.
+PSR_TYPES = {
+    "B16": "SOLAR",
+    "B19": "WIND_ONSHORE",
+    "B18": "WIND_OFFSHORE",
+    "B04": "GAS",
+    "B05": "COAL",
+    "B06": "OIL",
+    "B01": "BIOMASS",
+    "B17": "WASTE",
+    "B10": "PUMPED_STORAGE",
+    "B11": "HYDRO_ROR",
+    "B12": "HYDRO_RESERVOIR",
+    "B20": "OTHER",
+}
+
+
+def fetch_entsoe_generation(start, end):
+    """Actual generation per production type (A75) for the SEM zone — gives
+    real solar MW (B16) and the full fuel split with history, which EirGrid's
+    feed does not. Best-effort; returns None without a token or on parse error."""
+    token = os.environ.get("ENTSOE_TOKEN", "").strip()
+    if not token:
+        return None
+    import re
+    import xml.etree.ElementTree as ET
+    params = {
+        "securityToken": token,
+        "documentType": "A75",          # actual generation per type
+        "processType": "A16",           # realised
+        "in_Domain": SEM_DA_DOMAIN,
+        "periodStart": start.strftime("%Y%m%d%H%M"),
+        "periodEnd": end.strftime("%Y%m%d%H%M"),
+    }
+    url = ENTSOE_BASE + "?" + urllib.parse.urlencode(params)
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=90, context=SSL_CTX) as r:
+            xml = r.read().decode("utf-8", "replace")
+        root = ET.fromstring(xml)
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! ENTSO-E generation fetch failed: {e}", file=sys.stderr)
+        return None
+    ns = {"n": root.tag[root.tag.find("{")+1: root.tag.find("}")]} \
+        if "}" in root.tag else {}
+
+    def f(tag):
+        return f"n:{tag}" if ns else tag
+
+    # field -> {iso: value}; consumption (storage charging) is skipped
+    by_field = {}
+    stamps = set()
+    for ts in root.findall(f("TimeSeries"), ns):
+        psr = ts.find(f("MktPSRType"), ns)
+        code = psr.find(f("psrType"), ns).text if psr is not None else None
+        field = PSR_TYPES.get(code)
+        if not field:
+            continue
+        # skip out-flows (storage consumption) — only generation into the zone
+        if ts.find(f("outBiddingZone_Domain.mRID"), ns) is not None:
+            continue
+        period = ts.find(f("Period"), ns)
+        if period is None:
+            continue
+        ti = period.find(f("timeInterval"), ns)
+        base = datetime.strptime(ti.find(f("start"), ns).text,
+                                 "%Y-%m-%dT%H:%MZ").replace(tzinfo=timezone.utc)
+        res = period.find(f("resolution"), ns).text or "PT60M"
+        m = re.match(r"PT(\d+)M", res)
+        step = int(m.group(1)) if m else 60
+        for pt in period.findall(f("Point"), ns):
+            pos = int(pt.find(f("position"), ns).text)
+            qty = float(pt.find(f("quantity"), ns).text)
+            iso = (base + timedelta(minutes=step * (pos - 1))).isoformat()
+            stamps.add(iso)
+            by_field.setdefault(field, {})[iso] = \
+                by_field.get(field, {}).get(iso, 0) + qty
+    if not stamps:
+        return None
+    axis = sorted(stamps)
+    return {
+        "timestamps": axis,
+        "series": {fld: [m.get(iso) for iso in axis] for fld, m in by_field.items()},
+    }
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -376,15 +463,24 @@ def main():
         print(f"  region {region} ...")
         dataset["regions"][region] = {"areas": build_region(region, start, end)}
 
-    # ENTSO-E day-ahead price is an all-island (SEM) market series.
+    # ENTSO-E series are all-island (SEM market zone). Attached to every region
+    # so the price/capture/solar panels work whichever region is selected.
     prices = fetch_entsoe_prices(start, end)
+    dataset["meta"]["has_prices"] = bool(prices)
     if prices:
         print(f"    day-ahead prices: {len(prices['timestamps'])} points")
-        dataset["meta"]["has_prices"] = True
-        for region in regions:
+
+    gen = fetch_entsoe_generation(start, end)
+    dataset["meta"]["has_solar"] = bool(gen and "SOLAR" in gen.get("series", {}))
+    if gen:
+        fields = ", ".join(sorted(gen["series"].keys()))
+        print(f"    gen-by-type ({len(gen['timestamps'])} pts): {fields}")
+
+    for region in regions:
+        if prices:
             dataset["regions"][region]["areas"]["prices"] = prices
-    else:
-        dataset["meta"]["has_prices"] = False
+        if gen:
+            dataset["regions"][region]["areas"]["gen_by_type"] = gen
 
     # NB: the fuel-mix running log is owned by the cloud poller
     # (.github/workflows/poll-fuelmix.yml via --log-fuelmix). Full builds do NOT

@@ -70,6 +70,7 @@ const M = {
   },
 
   price() { return DATA.series("prices", "DAY_AHEAD_EUR_MWH"); },
+  solar() { return DATA.series("gen_by_type", "SOLAR"); },
 
   /* Wind capture analysis. Revenue-weighted price wind actually earns vs the
      time-weighted (baseload) average. Capture rate < 100% = cannibalisation.

@@ -1,6 +1,16 @@
 /* charts.js — ECharts panels. Theme-aware via CSS variables. */
 const CHARTS = {};
 
+/* Published dispatch-down figures — EirGrid/SONI Annual Renewable Constraint &
+   Curtailment Report 2024 (Apr 2025). Annual, not live (no live feed exists). */
+const CURTAIL = {
+  source: "EirGrid/SONI Annual Renewable Constraint & Curtailment Report 2024",
+  wind: { ALL: 14.0, ROI: 10.1, NI: 29.6 },     // % of available wind dispatched down
+  windGWh: { ALL: 2181, ROI: 1266, NI: 915 },
+  solar: { ALL: 7.1, ROI: 5.3, NI: 16.9 },
+  trend: "All-island wind dispatch-down rose from 10.7% (2023) to 14.0% (2024).",
+};
+
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
@@ -270,6 +280,80 @@ const RENDER = {
       yAxis: valueAxis("€/MWh"),
       series: [{ name: "Day-ahead", type: "line", symbol: "none", step: "end",
         color: cssVar("--accent-2"), lineStyle: { width: 1.5 }, data: pair(p) }],
+    });
+  },
+
+  solar() {
+    const el = document.getElementById("c-solar");
+    const note = document.getElementById("solar-note");
+    const s = M.solar();
+    if (!s.v.length) {
+      if (CHARTS["c-solar"]) { CHARTS["c-solar"].dispose(); delete CHARTS["c-solar"]; }
+      if (el) el.innerHTML = '<div style="height:100%;display:flex;align-items:center;'
+        + 'justify-content:center;padding:0 24px;"><div style="text-align:center;'
+        + 'color:var(--muted);font-size:13px;max-width:560px;">EirGrid publishes no '
+        + 'solar series. This shows real solar MW from ENTSO-E — set '
+        + '<code>ENTSOE_TOKEN</code> and re-run the ETL.</div></div>';
+      if (note) note.textContent = "All-island grid-scale solar (ENTSO-E B16). Behind-the-meter rooftop is not included.";
+      return;
+    }
+    const c = mount("c-solar"); if (!c) return;
+    c.setOption({
+      grid: baseGrid(), tooltip: tooltip(), xAxis: timeAxis(), yAxis: valueAxis("MW"),
+      dataZoom: [{ type: "inside" }],
+      series: [{ name: "Solar", type: "line", symbol: "none", color: "#f2c14e",
+        areaStyle: { opacity: 0.3 }, lineStyle: { width: 1.3 }, data: pair(s) }],
+    });
+    if (note) note.textContent = "All-island grid-scale solar (ENTSO-E B16). Behind-the-meter rooftop is not included.";
+  },
+
+  curtailRegion() {
+    const c = mount("c-curtail-region"); if (!c) return;
+    const d = CURTAIL.wind;
+    const regions = ["ALL", "ROI", "NI"];
+    const labels = { ALL: "All-island", ROI: "ROI", NI: "NI" };
+    c.setOption({
+      grid: { left: 48, right: 20, top: 20, bottom: 40 },
+      tooltip: tooltip({ trigger: "item",
+        formatter: (p) => `${p.name}: ${p.value}% dispatched down` }),
+      xAxis: { type: "category", data: regions.map((r) => labels[r]),
+        axisLabel: { color: cssVar("--muted") },
+        axisLine: { lineStyle: { color: cssVar("--line") } } },
+      yAxis: Object.assign(valueAxis("%"), { max: 35 }),
+      series: [{
+        type: "bar", barWidth: "45%",
+        data: regions.map((r) => ({
+          value: d[r],
+          itemStyle: { color: r === DATA.region ? cssVar("--carbon") : cssVar("--wind") },
+        })),
+        label: { show: true, position: "top", formatter: "{c}%",
+          color: cssVar("--text"), fontSize: 12 },
+      }],
+    });
+    const note = document.getElementById("curtail-note");
+    if (note) note.textContent = CURTAIL.trend + " Source: " + CURTAIL.source + ".";
+  },
+
+  curtailPressure() {
+    const c = mount("c-curtail-pressure"); if (!c) return;
+    const snsp = DATA.latest(M.snsp());
+    const val = snsp.v == null ? 0 : snsp.v;
+    c.setOption({
+      series: [{
+        type: "gauge", min: 0, max: 100, radius: "92%", center: ["50%", "58%"],
+        startAngle: 210, endAngle: -30,
+        axisLine: { lineStyle: { width: 14, color: [
+          [0.6, cssVar("--wind")], [0.75, cssVar("--warn")], [1, cssVar("--carbon")]] } },
+        pointer: { width: 4 },
+        progress: { show: false },
+        axisTick: { show: false }, splitLine: { length: 10, lineStyle: { color: cssVar("--muted") } },
+        axisLabel: { color: cssVar("--muted"), fontSize: 9, distance: 12 },
+        anchor: { show: false },
+        detail: { valueAnimation: true, formatter: "{value}%\nSNSP",
+          color: cssVar("--text"), fontSize: 20, offsetCenter: [0, "38%"] },
+        data: [{ value: Math.round(val) }],
+        markLine: {},
+      }],
     });
   },
 

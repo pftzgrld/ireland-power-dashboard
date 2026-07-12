@@ -32,6 +32,7 @@
     <button class="tab active" data-tab="overview">Overview</button>
     <button class="tab" data-tab="fuelmix">Fuel Mix</button>
     <button class="tab" data-tab="renewables">Renewables</button>
+    <button class="tab" data-tab="curtailment">Curtailment</button>
     <button class="tab" data-tab="carbon">Carbon</button>
     <button class="tab" data-tab="flows">Flows &amp; Prices</button>
     <button class="tab" data-tab="methodology">Methodology</button>
@@ -82,6 +83,31 @@
         <div class="card wide">
           <div class="card-head"><h3>Wind share of demand</h3><span class="tag">%</span></div>
           <div class="chart" id="c-wind-share"></div>
+        </div>
+        <div class="card wide">
+          <div class="card-head"><h3>Solar generation</h3><span class="tag" id="solar-tag">MW · ENTSO-E</span></div>
+          <div class="chart" id="c-solar"></div>
+          <p class="note" id="solar-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Curtailment -->
+    <section class="panel-tab" data-tab="curtailment">
+      <div class="tiles" id="curtail-tiles"></div>
+      <div class="grid">
+        <div class="card wide">
+          <div class="card-head"><h3>Wind dispatch-down by region (2024)</h3><span class="tag">% of available wind</span></div>
+          <div class="chart" id="c-curtail-region"></div>
+          <p class="note" id="curtail-note"></p>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Live curtailment pressure</h3><span class="tag">SNSP vs limit</span></div>
+          <div class="chart" id="c-curtail-pressure"></div>
+          <p class="note">Wind is curtailed when SNSP nears the operating limit (~75%) or the system is oversupplied. This is a live proxy, not a metered dispatch-down.</p>
+        </div>
+        <div class="card prose" id="curtail-context">
+          <h3>Where the constraints are</h3>
         </div>
       </div>
     </section>

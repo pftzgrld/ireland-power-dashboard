@@ -1,12 +1,23 @@
-/* data.js — load the ETL dataset and expose typed accessors. */
+/* data.js — load the ETL dataset and expose typed accessors.
+   Single source of truth: data is read from the GitHub repo's raw files, which
+   the cloud Actions keep current (fuel-mix every 15 min, full ETL daily). The
+   local dashboard and any hosted copy therefore show the same live data — no
+   local ETL, cron, or copy to keep in sync. Append ?local to the URL to read
+   the co-located files instead (for pipeline development). */
+const RAW_BASE =
+  "https://raw.githubusercontent.com/pftzgrld/ireland-power-dashboard/main/app";
+const DATA_BASE =
+  new URLSearchParams(location.search).has("local") ? "." : RAW_BASE;
+
 const DATA = {
   raw: null,
   region: "ALL",            // active region: ALL | ROI | NI
   fuelLog: null,            // running fuel-mix history (may be empty)
+  base: DATA_BASE,
 
   async load() {
-    const res = await fetch("data/dataset.json", { cache: "no-store" });
-    if (!res.ok) throw new Error("dataset.json not found — run the ETL first");
+    const res = await fetch(`${DATA_BASE}/data/dataset.json`, { cache: "no-store" });
+    if (!res.ok) throw new Error("dataset.json not reachable (offline?)");
     this.raw = await res.json();
     // backward-compat: old single-region shape had top-level `areas`
     if (this.raw.areas && !this.raw.regions) {
@@ -17,7 +28,7 @@ const DATA = {
     if (!avail.includes(this.region)) this.region = avail[0] || "ALL";
     // optional running fuel-mix log (sidecar; fine if absent)
     try {
-      const r2 = await fetch("data/fuelmix_log.json", { cache: "no-store" });
+      const r2 = await fetch(`${DATA_BASE}/data/fuelmix_log.json`, { cache: "no-store" });
       this.fuelLog = r2.ok ? await r2.json() : [];
     } catch (e) { this.fuelLog = []; }
     return this.raw;

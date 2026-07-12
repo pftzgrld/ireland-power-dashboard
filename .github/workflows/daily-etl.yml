@@ -1,0 +1,43 @@
+name: Daily ETL
+
+# Rebuilds the 15-minute series dataset (all-island / ROI / NI) once a day and
+# commits it, so the hosted dashboard stays current with no local process.
+# ENTSOE_TOKEN (repo secret, optional) lights up price + capture + solar.
+
+on:
+  schedule:
+    - cron: "40 5 * * *"   # 05:40 UTC daily
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "days of history to fetch"
+        default: "30"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-etl
+  cancel-in-progress: true
+
+jobs:
+  etl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install certifi
+      - name: Build dataset
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: python3 etl/build_dataset.py --days ${{ github.event.inputs.days || '30' }}
+      - name: Commit dataset
+        run: |
+          git config user.name "etl-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add app/data/dataset.json app/data/meta.json
+          git diff --staged --quiet || git commit -m "daily dataset $(date -u +%FT%TZ)"
+          git push

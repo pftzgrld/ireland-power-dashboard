@@ -21,6 +21,35 @@ function renderTiles() {
   }
 }
 
+function renderCurtailment() {
+  const r = DATA.region;
+  const tiles = [
+    { k: "Wind dispatched down", v: CURTAIL.wind[r], u: "%", sub: `${r} · 2024` },
+    { k: "Wind energy lost", v: (CURTAIL.windGWh[r] / 1000).toFixed(2), u: "TWh", sub: "dispatched down, 2024" },
+    { k: "Solar dispatched down", v: CURTAIL.solar[r], u: "%", sub: "2024" },
+  ];
+  const el = document.getElementById("curtail-tiles");
+  if (el) el.innerHTML = tiles.map((t) => `<div class="tile">
+    <div class="k">${t.k}</div>
+    <div class="v">${t.v}<span class="u">${t.u}</span></div>
+    <div class="sub2">${t.sub}</div></div>`).join("");
+
+  const ctx = document.getElementById("curtail-context");
+  if (ctx) ctx.innerHTML = `<h3>Where the constraints are</h3>
+    <p><strong>Curtailment</strong> = wind cut for system-wide reasons (oversupply,
+    the ~75% SNSP limit). <strong>Constraint</strong> = wind cut for local network
+    limits — this is the locational part.</p>
+    <p>The split is stark by jurisdiction: <strong>NI loses 29.6%</strong> of
+    available wind vs <strong>ROI's 10.1%</strong> (2024) — NI is far more
+    network-constrained. Dispatch-down is concentrated in high-wind, weak-grid
+    regions (the north and west).</p>
+    <p>There is no live locational feed (the SEM is a single price zone). The live
+    map of where the grid has capacity vs. is constrained is ESB Networks':</p>
+    <p><a href="https://www.esbnetworks.ie/services/get-connected/renewable-connection/network-capacity-heatmap"
+      target="_blank" rel="noopener">ESB Networks capacity heatmap →</a></p>
+    <p class="note">Figures: ${CURTAIL.source} (Apr 2025). Annual, not live.</p>`;
+}
+
 function renderHeader() {
   const meta = DATA.meta();
   const last = document.getElementById("last-updated");
@@ -104,6 +133,7 @@ function wireRegion() {
         b.classList.toggle("active", b.dataset.region === DATA.region));
       renderHeader();
       renderTiles();
+      renderCurtailment();
       renderAll();
       setTimeout(() => Object.values(CHARTS).forEach((c) => c && c.resize()), 20);
     });
@@ -136,6 +166,7 @@ async function boot() {
   wireRegion();
   renderHeader();
   renderTiles();
+  renderCurtailment();
   renderAll();
   loadMethodology();
 }
