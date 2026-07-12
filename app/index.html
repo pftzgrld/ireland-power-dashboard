@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ireland Power — All-Island Grid Terminal</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <div>
+        <h1>IRELAND POWER</h1>
+        <p class="sub">All-island (SEM) grid terminal · observed data</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="region-switch" id="region-switch">
+        <button class="rg active" data-region="ALL">All-island</button>
+        <button class="rg" data-region="ROI">ROI</button>
+        <button class="rg" data-region="NI">NI</button>
+      </div>
+      <div class="status" id="status">
+        <div class="status-line"><span class="lbl">Last data</span><span id="last-updated">—</span></div>
+        <div class="status-line"><span class="lbl">Source</span><span>EirGrid SGD</span></div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="fuelmix">Fuel Mix</button>
+    <button class="tab" data-tab="renewables">Renewables</button>
+    <button class="tab" data-tab="carbon">Carbon</button>
+    <button class="tab" data-tab="flows">Flows &amp; Prices</button>
+    <button class="tab" data-tab="methodology">Methodology</button>
+  </nav>
+
+  <main id="main">
+    <!-- Overview -->
+    <section class="panel-tab active" data-tab="overview">
+      <div class="tiles" id="tiles"></div>
+      <div class="grid">
+        <div class="card wide">
+          <div class="card-head"><h3>Generation by fuel</h3><span class="tag">MW · observed</span></div>
+          <div class="chart" id="c-genmix"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>Wind vs system demand</h3><span class="tag">MW</span></div>
+          <div class="chart" id="c-wind-demand"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>System non-synchronous penetration (SNSP)</h3><span class="tag">%</span></div>
+          <div class="chart" id="c-snsp"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fuel mix -->
+    <section class="panel-tab" data-tab="fuelmix">
+      <div class="grid">
+        <div class="card">
+          <div class="card-head"><h3>Current fuel mix</h3><span class="tag" id="fuelmix-time">latest</span></div>
+          <div class="chart" id="c-fuel-donut"></div>
+        </div>
+        <div class="card wide">
+          <div class="card-head"><h3>Fuel mix over time</h3><span class="tag">% share</span></div>
+          <div class="chart" id="c-fuel-area"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Renewables -->
+    <section class="panel-tab" data-tab="renewables">
+      <div class="tiles" id="tiles-ren"></div>
+      <div class="grid">
+        <div class="card wide">
+          <div class="card-head"><h3>Wind generation</h3><span class="tag">MW · observed</span></div>
+          <div class="chart" id="c-wind"></div>
+        </div>
+        <div class="card wide">
+          <div class="card-head"><h3>Wind share of demand</h3><span class="tag">%</span></div>
+          <div class="chart" id="c-wind-share"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Carbon -->
+    <section class="panel-tab" data-tab="carbon">
+      <div class="grid">
+        <div class="card wide">
+          <div class="card-head"><h3>CO₂ intensity</h3><span class="tag">gCO₂/kWh</span></div>
+          <div class="chart" id="c-co2-int"></div>
+        </div>
+        <div class="card wide">
+          <div class="card-head"><h3>CO₂ emissions rate</h3><span class="tag">tCO₂/hr</span></div>
+          <div class="chart" id="c-co2-em"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Flows & prices -->
+    <section class="panel-tab" data-tab="flows">
+      <div class="grid">
+        <div class="card wide">
+          <div class="card-head"><h3>Interconnector flows</h3><span class="tag">MW · + import / − export</span></div>
+          <div class="chart" id="c-flows"></div>
+        </div>
+        <div class="card wide">
+          <div class="card-head"><h3>Day-ahead wholesale price (SEM)</h3><span class="tag" id="price-tag">€/MWh · ENTSO-E</span></div>
+          <div class="chart" id="c-price"></div>
+          <p class="note" id="price-note"></p>
+        </div>
+        <div class="card wide">
+          <div class="card-head">
+            <h3>Wind capture price</h3>
+            <span class="tag" id="capture-tag">revenue-weighted vs baseload</span>
+          </div>
+          <div class="tiles" id="capture-tiles"></div>
+          <div class="chart" id="c-capture"></div>
+          <p class="note" id="capture-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Methodology -->
+    <section class="panel-tab" data-tab="methodology">
+      <div class="card wide prose" id="methodology-body">
+        <h3>Methodology &amp; data provenance</h3>
+        <p>Loading…</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Observed data — not a model. Estimated / proxy fields are labelled.</span>
+    <span id="foot-gen">—</span>
+  </footer>
+
+  <script src="js/vendor/echarts.min.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/metrics.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
