@@ -287,13 +287,18 @@ const RENDER = {
     const el = document.getElementById("c-solar");
     const note = document.getElementById("solar-note");
     const s = M.solar();
-    if (!s.v.length) {
+    const hasData = s.v.some((x) => x != null && x > 0);
+    if (!hasData) {
       if (CHARTS["c-solar"]) { CHARTS["c-solar"].dispose(); delete CHARTS["c-solar"]; }
+      const msg = DATA.hasPrices()
+        ? "ENTSO-E returns no usable solar for the SEM zone in this window. Most "
+          + "Irish solar is distribution-embedded and not reported to ENTSO-E, so "
+          + "there is no free all-island solar feed at this resolution."
+        : "EirGrid publishes no solar series. This shows real solar MW from "
+          + "ENTSO-E — set <code>ENTSOE_TOKEN</code> and re-run the ETL.";
       if (el) el.innerHTML = '<div style="height:100%;display:flex;align-items:center;'
         + 'justify-content:center;padding:0 24px;"><div style="text-align:center;'
-        + 'color:var(--muted);font-size:13px;max-width:560px;">EirGrid publishes no '
-        + 'solar series. This shows real solar MW from ENTSO-E — set '
-        + '<code>ENTSOE_TOKEN</code> and re-run the ETL.</div></div>';
+        + 'color:var(--muted);font-size:13px;max-width:600px;">' + msg + '</div></div>';
       if (note) note.textContent = "All-island grid-scale solar (ENTSO-E B16). Behind-the-meter rooftop is not included.";
       return;
     }
