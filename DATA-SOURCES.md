@@ -21,17 +21,18 @@ price it exposes, for the SEM zone (`10Y1001A1001A59C`):
 | Cross-border **scheduled + physical flows** | A11/A88 | Per-interconnector, both directions, richer than EirGrid's net. |
 | **Installed capacity per type** | A68 | Tracks the wind/solar/battery build-out — i.e. the cannibalisation trajectory. |
 
-## Solar — two routes
+## Solar — a confirmed free-data blind spot
 
-1. **Direct (preferred):** ENTSO-E A75 reports **B16 = Solar** for the SEM zone.
-   Grid-scale solar that EirGrid dispatches should appear. *Caveat:* Irish solar
-   is new; how fully EirGrid populates B16 needs a check once the token is live.
-2. **Deduced (no token, from data we already log):** solar is zero at night, so
-   `solar ≈ (renewables − wind)_daytime − (renewables − wind)_pre-dawn baseline`.
-   We already log the fuel-mix **Renewables** share every 15 min and have
-   `WIND_ACTUAL` and total generation (`GEN_EXP`); scaling renewables to MW and
-   subtracting wind isolates hydro+bio+solar, and the daytime bump over the
-   nighttime floor is solar. Rough, but real, and buildable from the running log.
+**Verified (Jul 2026, token live):** ENTSO-E A75 for the SEM zone returns
+**SOLAR = 0 across a full 30-day window**, while wind, gas, coal, oil, hydro and
+pumped storage all populate normally. So it is not a lag or a query bug — Irish
+grid solar simply is not reported to ENTSO-E, because most of it is
+distribution-embedded (below the transmission-visible threshold). There is **no
+free source of all-island solar MW at 15-minute resolution.** The Solar panel
+says this plainly rather than showing a fake series.
+
+Deduction (`renewables − wind`) is a possible future estimate but is limited by
+the lack of a historical non-wind-renewables MW series, so it is not built.
 
 ## Battery / storage — partly visible, mostly not
 

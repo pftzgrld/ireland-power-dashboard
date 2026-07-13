@@ -192,6 +192,38 @@ const RENDER = {
     });
   },
 
+  genByType() {
+    const el = document.getElementById("c-genbytype");
+    const note = document.getElementById("genbytype-note");
+    const fuels = M.genByType();
+    if (!fuels.length) {
+      if (CHARTS["c-genbytype"]) { CHARTS["c-genbytype"].dispose(); delete CHARTS["c-genbytype"]; }
+      if (el) el.innerHTML = '<div style="height:100%;display:flex;align-items:center;'
+        + 'justify-content:center;padding:0 24px;"><div style="text-align:center;'
+        + 'color:var(--muted);font-size:13px;max-width:560px;">Real fuel-by-fuel '
+        + 'generation (MW, with history) from ENTSO-E — set <code>ENTSOE_TOKEN</code> '
+        + 'and re-run the ETL.</div></div>';
+      if (note) note.textContent = "Actual generation per production type (ENTSO-E A75), all-island — independent of the region toggle.";
+      return;
+    }
+    const c = mount("c-genbytype"); if (!c) return;
+    c.setOption({
+      grid: baseGrid(),
+      legend: { top: 0, right: 8, type: "scroll",
+        textStyle: { color: cssVar("--muted"), fontSize: 11 } },
+      tooltip: tooltip(),
+      xAxis: timeAxis(),
+      yAxis: valueAxis("MW"),
+      dataZoom: [{ type: "inside" }],
+      series: fuels.map((o) => ({
+        name: o.name, type: "line", stack: "gen", areaStyle: { opacity: 0.85 },
+        lineStyle: { width: 0 }, symbol: "none", color: o.c,
+        data: o.t.map((t, i) => [t, o.v[i]]),
+      })),
+    });
+    if (note) note.textContent = "Actual generation per production type (ENTSO-E A75), all-island — independent of the region toggle. Solar is absent: Irish solar is distribution-embedded and not reported to ENTSO-E.";
+  },
+
   wind() {
     const c = mount("c-wind"); if (!c) return;
     c.setOption({

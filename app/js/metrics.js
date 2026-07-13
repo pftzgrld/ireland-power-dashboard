@@ -72,6 +72,29 @@ const M = {
   price() { return DATA.series("prices", "DAY_AHEAD_EUR_MWH"); },
   solar() { return DATA.series("gen_by_type", "SOLAR"); },
 
+  /* Real ENTSO-E generation-by-type (all-island). Ordered clean → dirty, only
+     fuels that actually carry data. */
+  genByType() {
+    const order = [
+      { f: "WIND_ONSHORE", name: "Wind", c: "#35c46b" },
+      { f: "SOLAR", name: "Solar", c: "#f2c14e" },
+      { f: "HYDRO_ROR", name: "Hydro", c: "#2ea0b8" },
+      { f: "PUMPED_STORAGE", name: "Pumped storage", c: "#8957e5" },
+      { f: "BIOMASS", name: "Biomass", c: "#7fb069" },
+      { f: "WASTE", name: "Waste", c: "#b0895f" },
+      { f: "GAS", name: "Gas", c: "#e3873b" },
+      { f: "COAL", name: "Coal", c: "#6b7076" },
+      { f: "OIL", name: "Oil", c: "#b05fd6" },
+      { f: "OTHER", name: "Other", c: "#8b98a5" },
+    ];
+    const a = DATA.area("gen_by_type");
+    const t = a.timestamps || [];
+    return order
+      .map((o) => ({ ...o, v: (a.series && a.series[o.f]) || [] }))
+      .filter((o) => o.v.some((x) => x != null && x > 0))
+      .map((o) => ({ ...o, t }));
+  },
+
   /* Wind capture analysis. Revenue-weighted price wind actually earns vs the
      time-weighted (baseload) average. Capture rate < 100% = cannibalisation.
      Returns null until price data exists. Price is hourly; wind is 15-min, so
