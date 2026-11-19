@@ -5,9 +5,9 @@
     "NI"
   ],
   "source": "EirGrid Smart Grid Dashboard (observed)",
-  "generated_utc": "2026-11-18T14:29:29.283947+00:00",
-  "window_start_utc": "2026-10-19T15:00:00+00:00",
-  "window_end_utc": "2026-11-18T15:00:00+00:00",
+  "generated_utc": "2026-11-19T14:39:09.340276+00:00",
+  "window_start_utc": "2026-10-20T15:00:00+00:00",
+  "window_end_utc": "2026-11-19T15:00:00+00:00",
   "cadence": "15-minute",
   "has_prices": false,
   "has_solar": false
